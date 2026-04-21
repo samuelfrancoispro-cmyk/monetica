@@ -1,0 +1,1358 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monetica — Journal Financier</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,700;0,9..144,900;1,9..144,500&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@300;500;700&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy-900: #0A0F1C;
+    --navy-800: #0F172A;
+    --navy-700: #1A2236;
+    --navy-600: #1E293B;
+    --navy-500: #2A3448;
+    --ink: #0A0F1C;
+    --gold: #D4AF37;
+    --gold-hi: #F4D079;
+    --gold-lo: #8B7524;
+    --gold-soft: rgba(212,175,55,0.12);
+    --gold-line: rgba(212,175,55,0.28);
+    --cream: #F8F5EC;
+    --cream-dim: rgba(248,245,236,0.55);
+    --cream-faint: rgba(248,245,236,0.18);
+    --mint: #86EFAC;
+    --ember: #FF6B4A;
+    --paper: #EDE6D3;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { background: var(--navy-900); color: var(--cream); }
+
+  body {
+    font-family: 'Geist', 'Inter', sans-serif;
+    font-weight: 400;
+    min-height: 100vh;
+    overflow-x: hidden;
+    font-feature-settings: 'ss01', 'ss02', 'cv11';
+    letter-spacing: -0.005em;
+  }
+
+  /* FILM GRAIN */
+  body::before {
+    content:''; position:fixed; inset:0; pointer-events:none; z-index:9999;
+    opacity:0.055; mix-blend-mode:overlay;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 300 300' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 220px;
+  }
+
+  /* GOLDEN GRADIENT MESH */
+  body::after {
+    content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+    background:
+      radial-gradient(ellipse 60% 40% at 85% 10%, rgba(212,175,55,0.08), transparent 60%),
+      radial-gradient(ellipse 50% 40% at 12% 90%, rgba(212,175,55,0.05), transparent 70%),
+      radial-gradient(circle at 50% 50%, transparent 40%, rgba(10,15,28,0.6));
+  }
+
+  /* ============= ANIMATIONS ============= */
+  @keyframes inkRise    { from{opacity:0;transform:translateY(28px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes slideLeft  { from{opacity:0;transform:translateX(30px)} to{opacity:1;transform:translateX(0)} }
+  @keyframes slideRight { from{opacity:0;transform:translateX(-30px)} to{opacity:1;transform:translateX(0)} }
+  @keyframes drawLine   { from{stroke-dashoffset:var(--len,1000)} to{stroke-dashoffset:0} }
+  @keyframes fillIn     { from{fill-opacity:0} to{fill-opacity:1} }
+  @keyframes tilt       { 0%,100%{transform:rotate(-8deg)} 50%{transform:rotate(2deg)} }
+  @keyframes xpFill     { from{width:0} to{width:62%} }
+  @keyframes xpShimmer  { from{transform:translateX(-100%)} to{transform:translateX(200%)} }
+  @keyframes marquee    { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+  @keyframes pulseDot   { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.3;transform:scale(1.4)} }
+  @keyframes countUp    { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes rotateSlow { from{transform:rotate(0)} to{transform:rotate(360deg)} }
+  @keyframes capWiggle  { 0%,100%{transform:rotate(0) translate(0,0)} 50%{transform:rotate(-6deg) translate(-2px,-3px)} }
+  @keyframes glintMove  { 0%{transform:translateX(-120%)} 100%{transform:translateX(220%)} }
+  @keyframes flash      { 0%,100%{opacity:0} 50%{opacity:1} }
+
+  .ink-1 { animation: inkRise 0.7s cubic-bezier(.16,1,.3,1) forwards; }
+  .ink-2 { opacity:0; animation: inkRise 0.7s cubic-bezier(.16,1,.3,1) forwards 0.12s; }
+  .ink-3 { opacity:0; animation: inkRise 0.7s cubic-bezier(.16,1,.3,1) forwards 0.24s; }
+  .ink-4 { opacity:0; animation: inkRise 0.7s cubic-bezier(.16,1,.3,1) forwards 0.36s; }
+  .ink-5 { opacity:0; animation: inkRise 0.7s cubic-bezier(.16,1,.3,1) forwards 0.48s; }
+  .ink-6 { opacity:0; animation: inkRise 0.7s cubic-bezier(.16,1,.3,1) forwards 0.6s; }
+  .ink-7 { opacity:0; animation: inkRise 0.7s cubic-bezier(.16,1,.3,1) forwards 0.72s; }
+
+  /* ============= TOP RIBBON (marquee ticker) ============= */
+  .ribbon {
+    position: relative;
+    background: var(--navy-800);
+    border-bottom: 1px solid var(--gold-line);
+    overflow: hidden;
+    z-index: 50;
+  }
+  .ribbon-inner {
+    display: flex;
+    gap: 48px;
+    padding: 10px 0;
+    white-space: nowrap;
+    animation: marquee 45s linear infinite;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    color: var(--cream-dim);
+  }
+  .ribbon-inner:hover { animation-play-state: paused; }
+  .ribbon-item { display:inline-flex; align-items:center; gap:8px; }
+  .ribbon-item .dot { width:5px;height:5px;background:var(--gold);border-radius:50%; box-shadow:0 0 8px var(--gold); }
+  .ribbon-item .sym { color: var(--cream); font-weight:700; }
+  .ribbon-item .up { color: var(--mint); }
+  .ribbon-item .dn { color: var(--ember); }
+  .ribbon-item .sep { color: var(--gold); opacity:0.5; }
+
+  /* ============= TOPBAR ============= */
+  .topbar {
+    position: sticky; top: 0; z-index: 40;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    padding: 18px 40px;
+    background: rgba(10,15,28,0.8);
+    backdrop-filter: blur(22px) saturate(160%);
+    border-bottom: 1px solid var(--cream-faint);
+  }
+
+  .brand {
+    display: inline-flex; align-items: center; gap: 12px;
+    cursor: pointer;
+    position: relative;
+  }
+  .brand:hover .cap-group { animation: capWiggle 0.6s ease; }
+  .brand:hover .glyph-e { filter: drop-shadow(0 0 12px rgba(212,175,55,0.6)); }
+
+  .brand-svg { width: 38px; height: 38px; overflow: visible; }
+  .glyph-e, .cap-plate, .cap-base, .cap-tassel-cord, .cap-tassel-ball {
+    transition: all 0.4s cubic-bezier(.16,1,.3,1);
+  }
+
+  .brand-word {
+    font-family: 'Fraunces', serif;
+    font-optical-sizing: auto;
+    font-weight: 700;
+    font-size: 24px;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    color: var(--cream);
+  }
+  .brand-word .ital { font-style: italic; font-weight: 500; color: var(--gold); }
+
+  .nav { display: flex; gap: 4px; align-items: center; }
+  .nav a {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--cream-dim);
+    text-decoration: none;
+    padding: 9px 16px;
+    border-radius: 999px;
+    transition: all 0.2s;
+    letter-spacing: 0.02em;
+    position: relative;
+  }
+  .nav a:hover { color: var(--cream); background: rgba(248,245,236,0.05); }
+  .nav a.on { color: var(--ink); background: var(--gold); font-weight: 600; }
+  .nav a .dot-live {
+    width:5px;height:5px;background:var(--ember);border-radius:50%;
+    display:inline-block;margin-left:6px;vertical-align:middle;
+    animation: pulseDot 1.4s ease infinite;
+  }
+
+  .top-right { display: flex; justify-content: flex-end; align-items: center; gap: 14px; }
+
+  .edition-stamp {
+    font-family: 'Instrument Serif', serif;
+    font-size: 12.5px;
+    font-style: italic;
+    color: var(--cream-dim);
+    letter-spacing: 0.01em;
+  }
+  .edition-stamp b { color: var(--gold); font-weight: 400; }
+
+  .avatar-chip {
+    display: flex; align-items: center; gap: 10px;
+    padding: 6px 6px 6px 14px;
+    background: rgba(248,245,236,0.05);
+    border: 1px solid var(--cream-faint);
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .avatar-chip:hover { border-color: var(--gold-line); background: var(--gold-soft); }
+  .avatar-chip .name { font-size: 12.5px; font-weight: 500; color: var(--cream); }
+  .avatar-chip .av {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: linear-gradient(140deg, var(--gold-hi), var(--gold) 55%, var(--gold-lo));
+    color: var(--ink);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Fraunces', serif;
+    font-weight: 900;
+    font-size: 12px;
+    letter-spacing: -0.02em;
+  }
+
+  /* ============= MASTHEAD ============= */
+  .masthead {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: end;
+    padding: 34px 40px 20px;
+    border-bottom: 1px solid var(--cream-faint);
+    position: relative;
+  }
+  .mast-left { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: var(--cream-dim); letter-spacing: 0.14em; text-transform: uppercase; }
+  .mast-left div { padding: 2px 0; }
+  .mast-left b { color: var(--gold); font-weight: 700; }
+
+  .mast-center {
+    text-align: center;
+    position: relative;
+  }
+  .mast-title {
+    font-family: 'Fraunces', serif;
+    font-variation-settings: 'opsz' 144, 'SOFT' 50;
+    font-weight: 900;
+    font-size: clamp(52px, 7vw, 96px);
+    letter-spacing: -0.045em;
+    line-height: 0.88;
+    color: var(--cream);
+  }
+  .mast-title em {
+    font-style: italic;
+    font-weight: 500;
+    color: var(--gold);
+    font-variation-settings: 'opsz' 144, 'SOFT' 100;
+  }
+  .mast-tag {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: 15px;
+    color: var(--cream-dim);
+    margin-top: 8px;
+    letter-spacing: 0.01em;
+  }
+  .mast-tag .divider { color: var(--gold); margin: 0 8px; }
+
+  .mast-right {
+    text-align: right;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    color: var(--cream-dim);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .mast-right .big {
+    font-family: 'Fraunces', serif;
+    font-size: 34px;
+    letter-spacing: -0.04em;
+    color: var(--gold);
+    font-weight: 700;
+    text-transform: none;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  /* ============= MAIN GRID ============= */
+  .issue {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 18px;
+    padding: 28px 40px 60px;
+    max-width: 1480px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 2;
+  }
+
+  /* ---- HERO ARTICLE (lead) ---- */
+  .lead {
+    grid-column: span 7;
+    grid-row: span 2;
+    position: relative;
+    background:
+      radial-gradient(ellipse 50% 60% at 100% 0%, rgba(212,175,55,0.14), transparent 60%),
+      radial-gradient(ellipse 40% 40% at 0% 100%, rgba(212,175,55,0.06), transparent 60%),
+      linear-gradient(160deg, var(--navy-700) 0%, var(--navy-800) 100%);
+    border: 1px solid var(--cream-faint);
+    border-radius: 22px;
+    padding: 40px;
+    overflow: hidden;
+    min-height: 520px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .lead::before {
+    content: '€';
+    position: absolute;
+    right: -70px; bottom: -140px;
+    font-family: 'Fraunces', serif;
+    font-weight: 900;
+    font-size: 640px;
+    line-height: 1;
+    color: transparent;
+    background: linear-gradient(180deg, rgba(212,175,55,0.11), rgba(212,175,55,0));
+    -webkit-background-clip: text;
+    background-clip: text;
+    pointer-events: none;
+    user-select: none;
+  }
+  .lead-top { display: flex; justify-content: space-between; align-items: flex-start; position: relative; z-index: 2; }
+  .rubric {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--gold);
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .rubric::before {
+    content:''; width: 24px; height: 1px; background: var(--gold);
+  }
+  .streak-wrap {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 13px;
+    background: rgba(212,175,55,0.1);
+    border: 1px solid var(--gold-line);
+    border-radius: 999px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: 0.04em;
+    position: relative;
+    overflow: hidden;
+  }
+  .streak-wrap::after {
+    content:''; position:absolute; inset:0;
+    background: linear-gradient(110deg, transparent 30%, rgba(212,175,55,0.35) 50%, transparent 70%);
+    animation: glintMove 3.5s ease-in-out infinite;
+  }
+
+  .lead-headline {
+    font-family: 'Fraunces', serif;
+    font-variation-settings: 'opsz' 120;
+    font-weight: 700;
+    font-size: clamp(40px, 4.2vw, 58px);
+    line-height: 0.92;
+    letter-spacing: -0.03em;
+    margin-top: 28px;
+    color: var(--cream);
+    position: relative;
+    z-index: 2;
+    max-width: 620px;
+  }
+  .lead-headline .accent {
+    font-style: italic;
+    color: var(--gold);
+    font-weight: 500;
+    position: relative;
+  }
+  .lead-headline .accent::after {
+    content:''; position:absolute; left:0; right:0; bottom:-4px;
+    height: 2px;
+    background: linear-gradient(90deg, var(--gold), transparent);
+  }
+  .lead-headline .name {
+    color: var(--gold-hi);
+    font-style: italic;
+  }
+
+  .lead-stand {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: 16.5px;
+    line-height: 1.5;
+    color: var(--cream-dim);
+    max-width: 520px;
+    margin-top: 18px;
+    position: relative;
+    z-index: 2;
+  }
+
+  /* XP PROGRESS — editorial bar */
+  .xp-block {
+    margin-top: 28px;
+    position: relative;
+    z-index: 2;
+  }
+  .xp-heads {
+    display: flex; justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--cream-dim);
+    margin-bottom: 10px;
+    text-transform: uppercase;
+  }
+  .xp-heads b { color: var(--gold); font-weight: 700; }
+  .xp-rail {
+    position: relative;
+    height: 3px;
+    background: var(--cream-faint);
+    border-radius: 2px;
+    overflow: visible;
+  }
+  .xp-fill {
+    position: absolute; left:0; top:0; bottom:0;
+    width: 62%;
+    background: linear-gradient(90deg, var(--gold-lo), var(--gold), var(--gold-hi));
+    border-radius: 2px;
+    box-shadow: 0 0 18px rgba(212,175,55,0.5);
+    animation: xpFill 2s cubic-bezier(.34,1.5,.64,1) 0.6s backwards;
+  }
+  .xp-fill::before {
+    content:''; position:absolute; inset:0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    animation: xpShimmer 2.8s ease-in-out infinite 2.4s;
+  }
+  .xp-marker {
+    position:absolute; top: 50%; left: 62%; transform: translate(-50%,-50%);
+    width: 16px; height: 16px;
+    background: var(--cream);
+    border: 3px solid var(--gold);
+    border-radius: 50%;
+    box-shadow: 0 0 0 4px rgba(212,175,55,0.18), 0 0 20px rgba(212,175,55,0.5);
+  }
+  .xp-ticks {
+    display: flex; justify-content: space-between;
+    margin-top: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px;
+    color: var(--cream-faint);
+    letter-spacing: 0.1em;
+  }
+  .xp-ticks span.cur { color: var(--gold); }
+
+  /* STATS STRIP */
+  .stats-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    margin-top: 24px;
+    border-top: 1px solid var(--cream-faint);
+    padding-top: 22px;
+    position: relative;
+    z-index: 2;
+  }
+  .stat-cell {
+    padding: 0 20px;
+    border-right: 1px solid var(--cream-faint);
+  }
+  .stat-cell:first-child { padding-left: 0; }
+  .stat-cell:last-child { border-right: none; padding-right: 0; }
+  .stat-lbl {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px;
+    color: var(--cream-dim);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .stat-val {
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    font-size: 30px;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    color: var(--cream);
+    animation: countUp 0.6s ease forwards;
+  }
+  .stat-val.gold { color: var(--gold); }
+  .stat-val .ital { font-style: italic; font-weight: 500; font-size: 18px; color: var(--cream-dim); margin-left: 4px; }
+  .stat-delta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    margin-top: 4px;
+    color: var(--mint);
+    font-weight: 500;
+  }
+
+  /* ---- RIGHT CARDS ---- */
+  .card {
+    background: var(--navy-800);
+    border: 1px solid var(--cream-faint);
+    border-radius: 18px;
+    padding: 22px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s, transform 0.3s;
+  }
+  .card:hover { border-color: var(--gold-line); }
+  .card-head {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 16px;
+  }
+  .card-kicker {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px;
+    letter-spacing: 0.2em;
+    color: var(--gold);
+    text-transform: uppercase;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .card-kicker::before { content:'—'; color: var(--gold); }
+  .card-title {
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    font-size: 22px;
+    letter-spacing: -0.025em;
+    line-height: 1.05;
+    color: var(--cream);
+    margin-top: 8px;
+  }
+  .card-title em { font-style: italic; color: var(--gold); font-weight: 500; }
+
+  /* Defi du jour — editorial Q card */
+  .defi {
+    grid-column: span 5;
+    grid-row: span 1;
+    background:
+      radial-gradient(ellipse at 100% 0%, rgba(212,175,55,0.1), transparent 60%),
+      var(--paper);
+    color: var(--ink);
+    min-height: 252px;
+    display: flex;
+    flex-direction: column;
+    padding: 26px;
+    position: relative;
+    overflow: hidden;
+  }
+  .defi::after {
+    content: 'Q.';
+    position: absolute;
+    right: -18px; bottom: -60px;
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 900;
+    font-size: 340px;
+    color: rgba(10,15,28,0.05);
+    line-height: 1;
+  }
+  .defi .card-kicker { color: var(--navy-800); }
+  .defi .card-kicker::before { color: var(--navy-800); }
+  .defi-question {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-style: italic;
+    font-size: 23px;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    margin-top: 14px;
+    position: relative;
+    z-index: 2;
+  }
+  .defi-question b { font-weight: 900; font-style: normal; }
+  .defi-foot {
+    margin-top: auto;
+    padding-top: 16px;
+    display: flex; justify-content: space-between; align-items: center;
+    position: relative; z-index: 2;
+  }
+  .defi-reward {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--navy-800);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .defi-reward b { color: var(--gold-lo); font-weight: 700; font-size: 13px; }
+  .btn-ink {
+    background: var(--ink); color: var(--cream);
+    border: none;
+    padding: 12px 20px;
+    border-radius: 999px;
+    font-family: 'Geist', sans-serif;
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    display: inline-flex; align-items: center; gap: 10px;
+    transition: all 0.25s;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-ink::before {
+    content:''; position:absolute; inset:0;
+    background: var(--gold);
+    transform: translateY(100%);
+    transition: transform 0.35s cubic-bezier(.16,1,.3,1);
+  }
+  .btn-ink:hover::before { transform: translateY(0); }
+  .btn-ink:hover { color: var(--ink); }
+  .btn-ink span, .btn-ink svg { position: relative; z-index: 2; }
+
+  /* LESSONS — magazine strip */
+  .lessons {
+    grid-column: span 12;
+    margin-top: 6px;
+  }
+  .lessons-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 18px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--cream-faint);
+  }
+  .lessons-head .big {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-style: italic;
+    font-size: 42px;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    color: var(--cream);
+  }
+  .lessons-head .big b { font-style: normal; font-weight: 900; color: var(--gold); }
+  .lessons-head .meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    color: var(--cream-dim);
+    text-transform: uppercase;
+  }
+  .lessons-head .meta b { color: var(--gold); }
+
+  .lessons-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+  }
+  .lesson {
+    background: var(--navy-800);
+    border: 1px solid var(--cream-faint);
+    border-radius: 16px;
+    padding: 22px;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.35s cubic-bezier(.16,1,.3,1);
+    display: flex; flex-direction: column; min-height: 240px;
+  }
+  .lesson:hover {
+    border-color: var(--gold);
+    transform: translateY(-4px);
+    background: linear-gradient(180deg, var(--navy-700), var(--navy-800));
+    box-shadow: 0 20px 40px -20px rgba(212,175,55,0.3);
+  }
+  .lesson:hover .lesson-arrow { transform: translate(4px,-4px); color: var(--gold); }
+  .lesson-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--cream-dim);
+  }
+  .lesson-title {
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    font-size: 22px;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+    margin-top: 14px;
+    color: var(--cream);
+  }
+  .lesson-title em { font-style: italic; color: var(--gold); font-weight: 500; }
+  .lesson-desc {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: 13.5px;
+    line-height: 1.45;
+    color: var(--cream-dim);
+    margin-top: 10px;
+  }
+  .lesson-foot {
+    margin-top: auto;
+    padding-top: 16px;
+    display: flex; justify-content: space-between; align-items: center;
+    border-top: 1px dashed var(--cream-faint);
+  }
+  .lesson-prog {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    color: var(--cream-dim);
+    letter-spacing: 0.08em;
+  }
+  .lesson-prog b { color: var(--gold); }
+  .lesson-arrow {
+    width: 30px; height: 30px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--cream-dim);
+    transition: all 0.35s;
+  }
+  .lesson-tag {
+    position: absolute;
+    top: 18px; right: 18px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 4px;
+  }
+  .lesson-tag.hot { background: var(--ember); color: var(--ink); font-weight: 700; }
+  .lesson-tag.new { background: var(--mint); color: var(--ink); font-weight: 700; }
+  .lesson-tag.lock { background: var(--cream-faint); color: var(--cream-dim); }
+
+  .lesson-thumb {
+    width: 100%; height: 60px;
+    margin-top: 14px;
+    border-radius: 8px;
+    background: var(--gold-soft);
+    border: 1px solid var(--gold-line);
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .lesson-mini-bar {
+    display: flex; align-items: end; gap: 4px; height: 32px;
+  }
+  .lesson-mini-bar span {
+    width: 7px;
+    background: var(--gold);
+    border-radius: 2px 2px 0 0;
+    opacity: 0.8;
+  }
+
+  /* PODIUM */
+  .podium {
+    grid-column: span 5;
+    background: var(--navy-800);
+    border: 1px solid var(--cream-faint);
+    border-radius: 18px;
+    padding: 22px;
+    min-height: 300px;
+    position: relative;
+  }
+  .podium-head { margin-bottom: 20px; }
+  .podium-title {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-style: italic;
+    font-size: 24px;
+    letter-spacing: -0.02em;
+    color: var(--cream);
+  }
+  .podium-title b { font-style: normal; font-weight: 900; color: var(--gold); }
+
+  .podium-vis {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    align-items: end;
+    gap: 14px;
+    height: 180px;
+    margin-bottom: 14px;
+  }
+  .col {
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    height: 100%;
+    justify-content: flex-end;
+  }
+  .col-av {
+    width: 44px; height: 44px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    font-size: 16px;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  .col-1 .col-av { background: linear-gradient(140deg, var(--gold-hi), var(--gold-lo)); box-shadow: 0 0 24px rgba(212,175,55,0.5); }
+  .col-2 .col-av { background: linear-gradient(140deg, #E8E8E8, #8F8F8F); }
+  .col-3 .col-av { background: linear-gradient(140deg, #D4956B, #8B5A3C); }
+  .col-name {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: var(--cream);
+  }
+  .col-pts {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--gold);
+    font-weight: 700;
+  }
+  .col-bar {
+    width: 100%;
+    border-radius: 8px 8px 0 0;
+    background: linear-gradient(180deg, var(--gold-soft), var(--navy-700));
+    border: 1px solid var(--gold-line);
+    border-bottom: none;
+    position: relative;
+    display: flex; align-items: flex-start; justify-content: center;
+    padding-top: 10px;
+  }
+  .col-1 .col-bar { height: 100%; background: linear-gradient(180deg, rgba(212,175,55,0.3), rgba(212,175,55,0.08)); }
+  .col-2 .col-bar { height: 78%; }
+  .col-3 .col-bar { height: 62%; }
+  .col-rank {
+    font-family: 'Fraunces', serif;
+    font-weight: 900;
+    font-size: 38px;
+    color: var(--gold);
+    line-height: 1;
+    letter-spacing: -0.05em;
+  }
+  .col-2 .col-rank { color: #B8B8B8; }
+  .col-3 .col-rank { color: #B87942; }
+
+  .podium-you {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 14px;
+    background: var(--gold-soft);
+    border: 1px solid var(--gold-line);
+    border-radius: 12px;
+  }
+  .podium-you-left { display: flex; align-items: center; gap: 10px; }
+  .podium-you .rank {
+    font-family: 'Fraunces', serif;
+    font-weight: 900;
+    font-size: 20px;
+    color: var(--gold);
+    letter-spacing: -0.04em;
+  }
+  .podium-you .av-me {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: linear-gradient(140deg, var(--gold-hi), var(--gold-lo));
+    color: var(--ink);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    font-size: 11px;
+  }
+  .podium-you .label {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--cream);
+  }
+  .podium-you .pts {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--gold);
+    font-weight: 700;
+  }
+
+  /* QUICK SIDEBAR (left) — editorial index */
+  .index-rail {
+    grid-column: span 2;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .index-cell {
+    padding: 16px 14px;
+    border: 1px solid var(--cream-faint);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .index-cell:hover { border-color: var(--gold); background: var(--gold-soft); }
+  .index-cell .n {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px;
+    color: var(--gold);
+    letter-spacing: 0.18em;
+  }
+  .index-cell .lbl {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-style: italic;
+    font-size: 15px;
+    color: var(--cream);
+  }
+  .index-cell .val {
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    font-size: 22px;
+    letter-spacing: -0.03em;
+    color: var(--gold);
+    line-height: 1;
+    margin-top: 4px;
+  }
+
+  /* SPARKLINE mini */
+  .spark {
+    grid-column: span 5;
+    grid-row: span 1;
+    padding: 22px;
+    background: var(--navy-800);
+    border: 1px solid var(--cream-faint);
+    border-radius: 18px;
+    display: flex;
+    flex-direction: column;
+  }
+  .spark-head { display: flex; justify-content: space-between; align-items: flex-start; }
+  .spark-big {
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    font-size: 44px;
+    letter-spacing: -0.04em;
+    color: var(--cream);
+    line-height: 1;
+    margin-top: 8px;
+  }
+  .spark-big .cur { color: var(--gold); }
+  .spark-big .ital { font-style: italic; font-size: 22px; color: var(--cream-dim); font-weight: 500; margin-left: 4px; }
+  .spark-delta {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(134,239,172,0.1);
+    color: var(--mint);
+    border: 1px solid rgba(134,239,172,0.25);
+  }
+  .spark-svg { width: 100%; height: 80px; margin-top: 16px; }
+  .spark-svg path.line {
+    fill: none; stroke: var(--gold); stroke-width: 2;
+    stroke-dasharray: 1000; stroke-dashoffset: 1000;
+    animation: drawLine 2s ease forwards 0.6s;
+    filter: drop-shadow(0 2px 8px rgba(212,175,55,0.4));
+  }
+  .spark-svg path.area { fill: url(#spark-grad); opacity: 0; animation: fillIn 0.8s ease forwards 2.2s; }
+  .spark-svg circle.pt {
+    fill: var(--cream); stroke: var(--gold); stroke-width: 3;
+    opacity: 0; animation: fillIn 0.5s ease forwards 2.4s;
+  }
+  .spark-foot {
+    margin-top: 14px;
+    display: flex; justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--cream-faint);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  /* ============= FOOTER BYLINE ============= */
+  .footline {
+    padding: 30px 40px;
+    border-top: 1px solid var(--cream-faint);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    color: var(--cream-faint);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    position: relative;
+    z-index: 2;
+  }
+  .footline b { color: var(--gold); }
+
+  /* GIANT WATERMARK */
+  .watermark {
+    position: absolute;
+    left: 0; right: 0; bottom: -280px;
+    font-family: 'Fraunces', serif;
+    font-weight: 900;
+    font-style: italic;
+    font-size: 540px;
+    line-height: 1;
+    text-align: center;
+    color: transparent;
+    -webkit-text-stroke: 1px rgba(212,175,55,0.12);
+    letter-spacing: -0.08em;
+    pointer-events: none;
+    user-select: none;
+    z-index: 1;
+  }
+
+  /* RESPONSIVE (basic) */
+  @media (max-width: 1100px) {
+    .issue { grid-template-columns: repeat(6, 1fr); }
+    .lead, .defi, .podium, .spark { grid-column: span 6; }
+    .index-rail { grid-column: span 6; flex-direction: row; flex-wrap: wrap; }
+    .index-cell { flex: 1 1 45%; }
+    .lessons-grid { grid-template-columns: repeat(2, 1fr); }
+    .masthead { grid-template-columns: 1fr; text-align: center; }
+    .mast-left, .mast-right { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- SVG DEFS -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <linearGradient id="spark-grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#D4AF37" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#D4AF37" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="gold-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F4D079"/>
+      <stop offset="55%" stop-color="#D4AF37"/>
+      <stop offset="100%" stop-color="#8B7524"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<!-- ========== TICKER RIBBON ========== -->
+<div class="ribbon">
+  <div class="ribbon-inner">
+    <span class="ribbon-item"><span class="dot"></span><span class="sym">BTC</span> 62 480€ <span class="up">▲ +3.2%</span></span>
+    <span class="ribbon-item sep">✦</span>
+    <span class="ribbon-item"><span class="sym">CAC 40</span> 8 142 <span class="dn">▼ -0.8%</span></span>
+    <span class="ribbon-item sep">✦</span>
+    <span class="ribbon-item"><span class="sym">EUR/USD</span> 1.0821 <span class="up">▲ +0.4%</span></span>
+    <span class="ribbon-item sep">✦</span>
+    <span class="ribbon-item"><span class="sym">S&amp;P 500</span> 5 248 <span class="up">▲ +1.1%</span></span>
+    <span class="ribbon-item sep">✦</span>
+    <span class="ribbon-item"><span class="sym">OR</span> 2 384€/oz <span class="up">▲ +0.6%</span></span>
+    <span class="ribbon-item sep">✦</span>
+    <span class="ribbon-item"><span class="sym">ETH</span> 3 142€ <span class="dn">▼ -1.3%</span></span>
+    <span class="ribbon-item sep">✦</span>
+    <span class="ribbon-item"><span class="sym">LIVRET A</span> 3.00% <span style="color:var(--gold)">—</span></span>
+    <span class="ribbon-item sep">✦</span>
+    <!-- DUPLICATE FOR INFINITE LOOP -->
+    <span class="ribbon-item"><span class="dot"></span><span class="sym">BTC</span> 62 480€ <span class="up">▲ +3.2%</span></span>
+    <span class="ribbon-item sep">✦</span>
+    <span class="ribbon-item"><span class="sym">CAC 40</span> 8 142 <span class="dn">▼ -0.8%</span></span>
+    <span class="ribbon-item sep">✦</span>
+    <span class="ribbon-item"><span class="sym">EUR/USD</span> 1.0821 <span class="up">▲ +0.4%</span></span>
+    <span class="ribbon-item sep">✦</span>
+    <span class="ribbon-item"><span class="sym">S&amp;P 500</span> 5 248 <span class="up">▲ +1.1%</span></span>
+    <span class="ribbon-item sep">✦</span>
+    <span class="ribbon-item"><span class="sym">OR</span> 2 384€/oz <span class="up">▲ +0.6%</span></span>
+    <span class="ribbon-item sep">✦</span>
+    <span class="ribbon-item"><span class="sym">ETH</span> 3 142€ <span class="dn">▼ -1.3%</span></span>
+    <span class="ribbon-item sep">✦</span>
+    <span class="ribbon-item"><span class="sym">LIVRET A</span> 3.00% <span style="color:var(--gold)">—</span></span>
+    <span class="ribbon-item sep">✦</span>
+  </div>
+</div>
+
+<!-- ========== TOPBAR ========== -->
+<header class="topbar ink-1">
+  <div class="brand">
+    <!-- REAL LOGO — € + graduation cap -->
+    <svg class="brand-svg" viewBox="0 0 260 260" xmlns="http://www.w3.org/2000/svg">
+      <!-- € glyph -->
+      <path class="glyph-e" d="M132.5 212.5c7.3-2.7 13.2-6.8 17.6-12.3 4.5-5.5 7.2-12.1 8.2-19.8l42.3-15.4c1.7 18.8-2.3 35.5-12 50.2-9.8 14.6-24 25.3-42.8 32.1-18.6 6.8-36.4 7.7-53.5 2.9-16.9-4.9-30.8-14.7-41.8-29.6l-17.5 6.4-7.3-20 14.2-5.2c-.6-1.3-1.4-3.3-2.4-6-1-2.8-1.8-5-2.2-6.6l-14.2 5.2-7.4-20.3 17.8-6.5c-1-18.3 3.4-34.7 13.3-49.2 9.9-14.7 24.1-25.4 42.6-32.1 18.8-6.8 36.6-7.7 53.6-3 17 4.9 30.8 15.1 41.6 30.6l-42.3 15.4c-5.7-5.3-11.9-8.5-18.8-9.7-7-1.4-14.1-.7-21.5 2-7.2 2.6-13.1 6.5-17.6 11.8-4.6 5.2-7.6 11.4-8.9 18.5l37.6-13.7 7.4 20.3-43.9 16c.3 1.4 1.1 3.6 2.2 6.6 1 2.7 1.8 4.7 2.4 6l43.9-16 7.3 20-38.1 13.9c5.7 4.9 12 8 18.9 9.2 7.1 1.2 14.3.4 21.7-2.3z" fill="url(#gold-grad)"/>
+      <!-- Cap group -->
+      <g class="cap-group" style="transform-origin: 210px 80px;">
+        <path class="cap-plate" d="M208.5 17.5l45.4 30-52.4 14.5-45.4-30 52.4-14.5z" fill="#0F172A"/>
+        <path class="cap-base" d="M222.6 65.5l-41.9-6.6c-3.4-.5-6.6 1.8-7.2 5.2l-2.3 14.9c-.5 3.4 1.8 6.6 5.2 7.2l41.9 6.6c3.4.5 6.6-1.8 7.2-5.2l2.3-14.9c.5-3.4-1.8-6.6-5.2-7.2z" fill="#1E293B"/>
+        <path class="cap-tassel-cord" d="M243.5 49.7l-2.8 37.7" stroke="#D4AF37" stroke-width="7.6" stroke-linecap="round"/>
+        <circle class="cap-tassel-ball" cx="239.4" cy="95.4" r="7.6" fill="#D4AF37"/>
+      </g>
+    </svg>
+    <span class="brand-word">mon<span class="ital">e</span>tica</span>
+  </div>
+
+  <nav class="nav">
+    <a href="#" class="on">Journal</a>
+    <a href="#">Parcours</a>
+    <a href="#">Quiz<span class="dot-live"></span></a>
+    <a href="#">Classement</a>
+    <a href="#">Marchés</a>
+    <a href="#">Profil</a>
+  </nav>
+
+  <div class="top-right">
+    <div class="edition-stamp"><b>N°</b> 047 · 21 avril 2026</div>
+    <div class="avatar-chip">
+      <span class="name">Samuel</span>
+      <div class="av">SF</div>
+    </div>
+  </div>
+</header>
+
+<!-- ========== MASTHEAD ========== -->
+<section class="masthead">
+  <div class="mast-left ink-2">
+    <div><b>◆</b> 3ᵉ B · Collège Henri IV</div>
+    <div>Édition du matin</div>
+    <div>Temps : <b>18°C</b> · Paris</div>
+  </div>
+
+  <div class="mast-center ink-3">
+    <h1 class="mast-title">Le Journal <em>Financier</em></h1>
+    <div class="mast-tag">Apprendre l'argent en jouant <span class="divider">·</span> <em style="font-style:italic">depuis 2026</em></div>
+  </div>
+
+  <div class="mast-right ink-4">
+    <div class="big">1 240 XP</div>
+    <div>Niveau · Employé III</div>
+    <div style="margin-top:6px;">Série · <b style="color:var(--gold);">12 jours</b></div>
+  </div>
+</section>
+
+<!-- ========== MAIN ISSUE GRID ========== -->
+<section class="issue">
+
+  <!-- INDEX RAIL -->
+  <aside class="index-rail ink-2">
+    <div class="index-cell">
+      <div class="n">01 / MONETIS</div>
+      <div class="lbl">Solde</div>
+      <div class="val">3 480</div>
+    </div>
+    <div class="index-cell">
+      <div class="n">02 / LEÇONS</div>
+      <div class="lbl">Complétées</div>
+      <div class="val">18<span style="color:var(--cream-dim);font-size:14px;font-style:italic;font-weight:500"> /42</span></div>
+    </div>
+    <div class="index-cell">
+      <div class="n">03 / BADGES</div>
+      <div class="lbl">Obtenus</div>
+      <div class="val">07</div>
+    </div>
+    <div class="index-cell">
+      <div class="n">04 / CLASSE</div>
+      <div class="lbl">Rang</div>
+      <div class="val">03<span style="color:var(--cream-dim);font-size:14px;font-style:italic;font-weight:500">ᵉ</span></div>
+    </div>
+  </aside>
+
+  <!-- LEAD ARTICLE -->
+  <article class="lead ink-3">
+    <div>
+      <div class="lead-top">
+        <span class="rubric">Une · Tableau de bord</span>
+        <span class="streak-wrap">
+          <svg width="11" height="13" viewBox="0 0 24 28" fill="currentColor"><path d="M12 0c0 0-5 5-5 11a5 5 0 0 0 10 0c0-6-5-11-5-11z"/></svg>
+          12 jours
+        </span>
+      </div>
+
+      <h2 class="lead-headline">
+        Bonjour <span class="name">Samuel,</span><br>
+        ton capital <span class="accent">apprentissage</span> grimpe en flèche.
+      </h2>
+
+      <p class="lead-stand">
+        Tu as gagné <b style="color:var(--gold);font-style:normal;font-weight:500">+200 XP</b> aujourd'hui en terminant le chapitre 3 du <em>Budget personnel</em>.
+        Plus que <b style="color:var(--gold);font-style:normal;font-weight:500">760 XP</b> pour atteindre <em>Cadre I</em> et débloquer l'univers Investissement.
+      </p>
+    </div>
+
+    <div>
+      <div class="xp-block">
+        <div class="xp-heads">
+          <span>Employé III · <b>1 240 XP</b></span>
+          <span>Cadre I · 2 000 XP</span>
+        </div>
+        <div class="xp-rail">
+          <div class="xp-fill"></div>
+          <div class="xp-marker"></div>
+        </div>
+        <div class="xp-ticks">
+          <span>0</span><span>500</span><span>1000</span><span class="cur">▼ 1240</span><span>1500</span><span>2000</span>
+        </div>
+      </div>
+
+      <div class="stats-strip">
+        <div class="stat-cell">
+          <div class="stat-lbl">Monetis</div>
+          <div class="stat-val gold">3 480</div>
+          <div class="stat-delta">▲ +150 aujourd'hui</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-lbl">Leçons</div>
+          <div class="stat-val">18<span class="ital">/42</span></div>
+          <div class="stat-delta">▲ +2 cette semaine</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-lbl">Quiz réussis</div>
+          <div class="stat-val">94<span class="ital">%</span></div>
+          <div class="stat-delta">▲ +6 pts</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-lbl">Rang classe</div>
+          <div class="stat-val gold">3<span class="ital">ᵉ</span></div>
+          <div class="stat-delta">▲ gagné 2 places</div>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <!-- DAILY CHALLENGE (editorial card on paper) -->
+  <article class="defi card ink-4">
+    <div>
+      <span class="card-kicker">Défi · Édition du 21.04</span>
+      <div class="defi-question">
+        <b>Question du jour.</b> Si tu économises <b>50€/mois</b> dès tes 18 ans à un taux de <b>3%</b>, combien auras-tu à <b>30 ans</b> ?
+      </div>
+    </div>
+    <div class="defi-foot">
+      <div class="defi-reward">Récompense · <b>+150 Monetis</b> · +75 XP</div>
+      <button class="btn-ink">
+        <span>Répondre</span>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="position:relative;z-index:2"><polyline points="9 6 15 12 9 18"/></svg>
+      </button>
+    </div>
+  </article>
+
+  <!-- SPARKLINE — progression 30j -->
+  <article class="spark ink-5">
+    <div class="spark-head">
+      <div>
+        <span class="card-kicker">Progression · 30 derniers jours</span>
+        <div class="spark-big"><span class="cur">+1 240</span> <span class="ital">XP</span></div>
+      </div>
+      <div class="spark-delta">▲ +34% vs mois dernier</div>
+    </div>
+
+    <svg class="spark-svg" viewBox="0 0 400 80" preserveAspectRatio="none">
+      <path class="area" d="M0,60 C40,55 70,52 100,48 S160,38 200,32 S280,18 320,14 400,6 400,6 L400,80 L0,80 Z" style="--len:1000"/>
+      <path class="line" d="M0,60 C40,55 70,52 100,48 S160,38 200,32 S280,18 320,14 400,6 400,6" style="--len:1000"/>
+      <circle class="pt" cx="400" cy="6" r="5"/>
+    </svg>
+
+    <div class="spark-foot">
+      <span>22 mars</span><span>29 mars</span><span>5 avril</span><span>12 avril</span><span>21 avril</span>
+    </div>
+  </article>
+
+  <!-- LESSONS -->
+  <section class="lessons ink-6">
+    <div class="lessons-head">
+      <div class="big">Parcours en <b>cours</b></div>
+      <div class="meta">Section II · <b>4 modules actifs</b> · voir tout →</div>
+    </div>
+
+    <div class="lessons-grid">
+      <!-- 1 -->
+      <article class="lesson">
+        <span class="lesson-tag hot">en cours</span>
+        <div class="lesson-num">01 — BUDGET</div>
+        <h3 class="lesson-title">Le <em>budget</em> personnel</h3>
+        <p class="lesson-desc">Apprends à répartir tes revenus entre dépenses fixes, loisirs et épargne.</p>
+        <div class="lesson-thumb">
+          <div class="lesson-mini-bar">
+            <span style="height:40%"></span><span style="height:70%"></span><span style="height:55%"></span>
+            <span style="height:85%"></span><span style="height:48%"></span><span style="height:62%"></span>
+          </div>
+        </div>
+        <div class="lesson-foot">
+          <div class="lesson-prog">Progression · <b>72%</b></div>
+          <div class="lesson-arrow">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+          </div>
+        </div>
+      </article>
+
+      <!-- 2 -->
+      <article class="lesson">
+        <span class="lesson-tag new">complété</span>
+        <div class="lesson-num">02 — ARGENT</div>
+        <h3 class="lesson-title">Comprendre <em>l'argent</em></h3>
+        <p class="lesson-desc">Histoire, inflation, valeur — les bases pour raisonner en économiste.</p>
+        <div class="lesson-thumb" style="background:rgba(134,239,172,0.08);border-color:rgba(134,239,172,0.25)">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--mint)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="lesson-foot">
+          <div class="lesson-prog" style="color:var(--mint)">Score · <b style="color:var(--mint)">96%</b></div>
+          <div class="lesson-arrow">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+          </div>
+        </div>
+      </article>
+
+      <!-- 3 -->
+      <article class="lesson">
+        <div class="lesson-num">03 — ÉPARGNE</div>
+        <h3 class="lesson-title">Épargne &amp; <em>intérêts</em></h3>
+        <p class="lesson-desc">Intérêt simple vs composé, la magie du temps et du capital.</p>
+        <div class="lesson-thumb">
+          <svg width="100%" height="40" viewBox="0 0 200 40" preserveAspectRatio="none" style="opacity:0.8">
+            <path d="M0,36 Q50,32 100,22 T200,4" fill="none" stroke="var(--gold)" stroke-width="2"/>
+            <circle cx="200" cy="4" r="3" fill="var(--gold)"/>
+          </svg>
+        </div>
+        <div class="lesson-foot">
+          <div class="lesson-prog">Progression · <b>88%</b></div>
+          <div class="lesson-arrow">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+          </div>
+        </div>
+      </article>
+
+      <!-- 4 -->
+      <article class="lesson" style="opacity:0.6">
+        <span class="lesson-tag lock">verrouillé</span>
+        <div class="lesson-num">04 — BOURSE</div>
+        <h3 class="lesson-title">La <em>bourse</em> pour débutants</h3>
+        <p class="lesson-desc">Actions, ETF, PEA — comprendre avant de se lancer.</p>
+        <div class="lesson-thumb" style="background:rgba(248,245,236,0.03);border-color:var(--cream-faint);">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--cream-dim)" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </div>
+        <div class="lesson-foot">
+          <div class="lesson-prog">Débloque · <b style="color:var(--cream-dim)">Cadre I</b></div>
+          <div class="lesson-arrow">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </div>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- PODIUM -->
+  <section class="podium ink-7">
+    <div class="podium-head">
+      <span class="card-kicker">Section III · Classement hebdo</span>
+      <h3 class="podium-title">Le <b>podium</b> de ta <em>classe</em></h3>
+    </div>
+
+    <div class="podium-vis">
+      <!-- 2 -->
+      <div class="col col-2">
+        <div class="col-av">TL</div>
+        <div class="col-name">Tom L.</div>
+        <div class="col-pts">2 610 XP</div>
+        <div class="col-bar"><div class="col-rank">2</div></div>
+      </div>
+      <!-- 1 -->
+      <div class="col col-1">
+        <div class="col-av">MD</div>
+        <div class="col-name" style="color:var(--gold)">Marie D. ♛</div>
+        <div class="col-pts">2 840 XP</div>
+        <div class="col-bar"><div class="col-rank">1</div></div>
+      </div>
+      <!-- 3 -->
+      <div class="col col-3">
+        <div class="col-av">SF</div>
+        <div class="col-name">Samuel F.</div>
+        <div class="col-pts">2 480 XP</div>
+        <div class="col-bar"><div class="col-rank">3</div></div>
+      </div>
+    </div>
+
+    <div class="podium-you">
+      <div class="podium-you-left">
+        <span class="rank">03ᵉ</span>
+        <div class="av-me">SF</div>
+        <span class="label">— <em>c'est toi.</em> Plus que <b style="color:var(--gold);font-style:normal;">130 XP</b> pour la 2ᵉ place.</span>
+      </div>
+      <span class="pts">▲ +200</span>
+    </div>
+  </section>
+
+</section>
+
+<!-- ========== FOOTLINE ========== -->
+<footer class="footline">
+  <div>© <b>Monetica</b> · 2026 · Apprendre l'argent en <b>jouant</b></div>
+  <div>Version <b>v3.0</b> · build 2604 · <b>●</b> en ligne</div>
+</footer>
+
+<!-- WATERMARK (cut off screen) -->
+<div style="position:relative;overflow:hidden;height:180px;">
+  <div class="watermark">monetica</div>
+</div>
+
+</body>
+</html>

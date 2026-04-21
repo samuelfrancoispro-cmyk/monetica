@@ -1,0 +1,117 @@
+@import "tailwindcss";
+
+:root {
+  --navy-900: #0A0F1C;
+  --navy-800: #0F172A;
+  --navy-700: #1A2236;
+  --navy-600: #1E293B;
+  --gold: #D4AF37;
+  --gold-hi: #F4D079;
+  --gold-lo: #8B7524;
+  --cream: #F8F5EC;
+  --cream-dim: rgba(248,245,236,0.55);
+  --cream-faint: rgba(248,245,236,0.1);
+  --mint: #86EFAC;
+  --ember: #FF6B4A;
+}
+
+@theme inline {
+  --color-navy-900: var(--navy-900);
+  --color-navy-800: var(--navy-800);
+  --color-navy-700: var(--navy-700);
+  --color-gold: var(--gold);
+  --color-gold-hi: var(--gold-hi);
+  --color-cream: var(--cream);
+  --color-mint: var(--mint);
+  --color-ember: var(--ember);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-serif: var(--font-fraunces);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scrollbar-color: rgba(212,175,55,0.3) rgba(15,23,42,0.5);
+  scrollbar-width: thin;
+}
+
+body {
+  background: var(--navy-900);
+  color: var(--cream);
+  overflow-x: hidden;
+}
+
+/* Film grain overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 300 300' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 200px;
+}
+
+/* Gold ambient glow */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 60% 40% at 85% 10%, rgba(212,175,55,0.07), transparent 60%),
+    radial-gradient(ellipse 40% 40% at 10% 85%, rgba(212,175,55,0.04), transparent 60%);
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+@keyframes inkRise {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes xpFill {
+  from { width: 0; }
+  to   { width: 62%; }
+}
+
+@keyframes xpShimmer {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(200%); }
+}
+
+@keyframes glintMove {
+  0%   { transform: translateX(-120%); }
+  100% { transform: translateX(220%); }
+}
+
+@keyframes drawLine {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes fillPath {
+  to { opacity: 1; }
+}
+
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.3; transform: scale(1.5); }
+}
+
+@keyframes capWiggle {
+  0%, 100% { transform: rotate(0) translate(0,0); }
+  50%       { transform: rotate(-6deg) translate(-2px,-3px); }
+}
+
+.animate-marquee    { animation: marquee 45s linear infinite; }
+.animate-ink        { animation: inkRise 0.7s cubic-bezier(.16,1,.3,1) forwards; }
+.animate-pulse-dot  { animation: pulseDot 1.4s ease infinite; }
